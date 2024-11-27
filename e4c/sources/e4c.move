@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module e4c::e4c {
+    use sui::balance;
     use sui::{
         coin::{Self},
-        balance
     };
 
     // === Constants ===
@@ -12,7 +12,7 @@ module e4c::e4c {
     const E4CTokenMaxSupply: u64 = 1_000_000_000_00;
 
     // TODO: update the token metadata according to the requirements.
-    const E4CTokenDecimals: u8 = 2;
+    const E4CTokenDecimals: u8 = 9;
     const E4CTokenSymbol: vector<u8> = b"E4C";
     const E4CTokenName: vector<u8> = b"$E4C";
     const E4CTokenDescription: vector<u8> = b"$E4C is ...";

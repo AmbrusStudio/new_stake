@@ -21,7 +21,7 @@
     },
     "homepage": "https://github.com/MystenLabs/ambrus-e4c#readme",
     "dependencies": {
-      "@mysten/sui.js": "^0.50.1",
+      "@mysten/sui": "^1.13.0",
       "dotenv": "^16.4.5"
     },
     "devDependencies": {

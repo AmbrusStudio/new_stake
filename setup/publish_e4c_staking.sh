@@ -21,7 +21,7 @@ if [ $# -ne 0 ]; then
   fi
 fi
 
-publish_res=$(sui client publish --with-unpublished-dependencies  --gas-budget 200000000 --json ../e4c_staking)
+publish_res=$(sui client publish   --skip-dependency-verification  --gas-budget 200000000 --json ../e4c_staking)
 
 echo ${publish_res} | jq '.' > .publish.res_e4c_staking.json
 echo ${publish_res}

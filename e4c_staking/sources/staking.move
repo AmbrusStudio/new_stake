@@ -3,13 +3,10 @@
 
 module e4c_staking::staking {
 
-    use sui::{
-        balance::{Self, Balance},
-        coin::{Self, Coin},
-        event,
-        clock::Clock
-    };
-
+    use sui::balance::{Self,Balance};
+    use sui::clock::Clock;
+    use sui::event;
+    use sui::coin::{Self,Coin};
     use e4c::e4c::E4C;
     use e4c_staking::config::{
         annualized_interest_rate_bp,
@@ -129,10 +126,10 @@ module e4c_staking::staking {
         clock: &Clock,
         ctx: &mut TxContext
     ): Coin<E4C> {
-        // assert!(
-        //     receipt.staking_end_at <= clock.timestamp_ms(),
-        //     EStakingTimeNotEnded
-        // );
+        assert!(
+            receipt.staking_end_at <= clock.timestamp_ms(),
+            EStakingTimeNotEnded
+        );
 
         let StakingReceipt {
             id,

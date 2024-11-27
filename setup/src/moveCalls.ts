@@ -1,15 +1,15 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { SuiClient } from "@mysten/sui.js/client";
-import { TransactionBlock } from "@mysten/sui.js/transactions";
-import { Ed25519Keypair } from "@mysten/sui.js/keypairs/ed25519";
-import { SUI_CLOCK_OBJECT_ID } from "@mysten/sui.js/utils";
+import { SuiClient } from "@mysten/sui/client";
+import { Transaction } from "@mysten/sui/transactions";
+import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
+import { SUI_CLOCK_OBJECT_ID } from "@mysten/sui/utils";
 
 import {
     E4C_PACKAGE, // The package ID of the E4C coin
     STAKING_PACKAGE, // The package ID of the Staking
-    SUI_NETWORK, // The URL of the Sui network
+    SUI_NETWORK, // The URL of the Sui netw
     ADMIN_PHRASE, // Mnemonic phrase managed by Ambrus to sign transactions
     PLAYER_PHRASE, // Mnemonic phrase managed by a Player to sign transactions
     GAME_LIQIUIDITY_POOL, // The address of the GamingLiquitidyPool shared object
@@ -50,7 +50,7 @@ let playerAddress = getSigner(PLAYER_PHRASE).getPublicKey().toSuiAddress();
 //---------------------------------------------------------
 const splitCoins = async (numberOfCoins: number = 5) => {
 
-    let tx = new TransactionBlock();
+    let tx = new Transaction();
     // example of how to read from an address
     const userObjects = await client.getOwnedObjects({
         owner: adminAddress,
@@ -69,13 +69,13 @@ const splitCoins = async (numberOfCoins: number = 5) => {
     const e4cCoin = E4CObjects[0].data?.objectId as string;
   
     for (let i = 0; i < numberOfCoins; i++) {
-      let coin = tx.splitCoins(e4cCoin, [tx.pure(COIN_SIZE)]);
+      let coin = tx.splitCoins(e4cCoin, [tx.pure.u64(COIN_SIZE)]);
       // transfer the splitted coins to the admin address handled by Ambrus
-      tx.transferObjects([coin], tx.pure(adminAddress));
+      tx.transferObjects([coin], tx.pure.address(adminAddress));
     }
     // sign and execute the transaction block
-    let res = await client.signAndExecuteTransactionBlock({
-      transactionBlock: tx,
+    let res = await client.signAndExecuteTransaction({
+        transaction: tx,
       requestType: "WaitForLocalExecution",
       signer: getSigner(ADMIN_PHRASE),
       options: {
@@ -90,7 +90,7 @@ const splitCoins = async (numberOfCoins: number = 5) => {
 //---------------------------------------------------------
 const topUpGamingPool = async () => {
 
-    let tx = new TransactionBlock();
+    let tx = new Transaction();
 console.log(adminAddress)
     // Get all objects owned by the admin address
     const userObjects = await client.getOwnedObjects({
@@ -117,8 +117,8 @@ console.log(adminAddress)
         ],
     });
     try {
-        let txRes = await client.signAndExecuteTransactionBlock({
-          transactionBlock: tx,
+        let txRes = await client.signAndExecuteTransaction({
+            transaction: tx,
           requestType: "WaitForLocalExecution",
           signer: getSigner(ADMIN_PHRASE),
           options: {
@@ -137,7 +137,7 @@ console.log(adminAddress)
 //---------------------------------------------------------  
 const transferE4CToPlayer = async () => {
 
-    let tx = new TransactionBlock();
+    let tx = new Transaction();
     
     // Get all objects owned by the admin address
     const userObjects = await client.getOwnedObjects({
@@ -155,10 +155,10 @@ const transferE4CToPlayer = async () => {
     const e4cCoin = E4CObjects[0].data?.objectId as string;
 
     // Transfer the E4C coin to the player address
-    tx.transferObjects([e4cCoin], tx.pure(playerAddress));
+    tx.transferObjects([e4cCoin], tx.pure.address(playerAddress));
   
-    let res = await client.signAndExecuteTransactionBlock({
-      transactionBlock: tx,
+    let res = await client.signAndExecuteTransaction({
+        transaction: tx,
       requestType: "WaitForLocalExecution",
       signer: getSigner(ADMIN_PHRASE),
       options: {
@@ -173,7 +173,7 @@ const transferE4CToPlayer = async () => {
 //---------------------------------------------------------  
 const stake = async () => {
     
-    let tx = new TransactionBlock();
+    let tx = new Transaction();
 
     // example of how to read an address
     const userObjects = await client.getOwnedObjects({
@@ -198,18 +198,18 @@ const stake = async () => {
             tx.object(GAME_LIQIUIDITY_POOL),
             tx.object(SUI_CLOCK_OBJECT_ID),
             tx.object(STAKING_CONFIG),
-            tx.pure("90", "u64"), // 90 days
+            tx.pure.u64("10"), // 90 days
             ],
         });
     
         // Transfer the E4C coin to the player address
-    tx.transferObjects([stakingReceipt], tx.pure(playerAddress));
+    tx.transferObjects([stakingReceipt], tx.pure.address(playerAddress));
 
     tx.setGasBudget(1000000000);
 
     try {
-        let txRes = await client.signAndExecuteTransactionBlock({
-        transactionBlock: tx,
+        let txRes = await client.signAndExecuteTransaction({
+            transaction: tx,
         requestType: "WaitForLocalExecution",
         signer: getSigner(PLAYER_PHRASE),
         options: {
@@ -227,7 +227,7 @@ const stake = async () => {
 //--------------------------------------------------------- 
 const unstake = async (staking_receipt: string) => {
     
-    let tx = new TransactionBlock();
+    let tx = new Transaction();
 
     let [rewards] = tx.moveCall({
         target: `${STAKING_PACKAGE}::staking::unstake`,
@@ -237,13 +237,13 @@ const unstake = async (staking_receipt: string) => {
         ],
         });
 
-    tx.transferObjects([rewards], tx.pure(playerAddress));
+    tx.transferObjects([rewards], tx.pure.address(playerAddress));
 
-    tx.setGasBudget(1000000000);
+    // tx.setGasBudget(1000000000);
 
     try {
-        let txRes = await client.signAndExecuteTransactionBlock({
-        transactionBlock: tx,
+        let txRes = await client.signAndExecuteTransaction({
+            transaction: tx,
         requestType: "WaitForLocalExecution",
         signer: getSigner(PLAYER_PHRASE),
         options: {
@@ -278,7 +278,7 @@ if (process.argv[2] === undefined) {
             break;
         case "unstake":
             // Provide the staking receipt as an argument
-            unstake("");
+            unstake("0x10e762a591fc203b337f538201eb1cdecc9d460aa4eb1586e72e9c5f0d2fe341");
             break;    
       }
     }
