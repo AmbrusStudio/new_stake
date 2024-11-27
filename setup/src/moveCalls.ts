@@ -39,6 +39,8 @@ const client = getClient();
 // Constants
 const COIN_SIZE = 10_000; // The size of a splitted E4C coin
 const E4C_COIN_TYPE = `0x2::coin::Coin<${E4C_PACKAGE}::e4c::E4C>`;
+const E4C_TYPE = `${E4C_PACKAGE}::e4c::E4C`;
+const StakeRequest = `${STAKING_PACKAGE}::staking::StakingReceipt`;
 
 // Derive addresses from the Mnemonic phrases
 console.log("ADMIN_PHRASE", PLAYER_PHRASE);
@@ -221,6 +223,31 @@ const stake = async () => {
         console.error("Could not stake $e4c in pool", e);
     }
 };
+const queryE4cBalance = async () => {
+    const balance = await client.getBalance({
+        owner: playerAddress,
+        coinType: E4C_TYPE,
+    });
+    console.log(balance);
+}
+
+const queryE4c = async () => {
+
+    const e4cObjects = await client.getOwnedObjects({
+        owner: playerAddress,
+        filter: {
+            MatchAll: [
+                {
+                    StructType: StakeRequest,
+                },
+                {
+                    AddressOwner: playerAddress,
+                },
+            ],
+        },
+    });
+    console.log(JSON.stringify(e4cObjects))
+}
 
 //---------------------------------------------------------
 /// Unstake and claim rewards
@@ -269,6 +296,12 @@ if (process.argv[2] === undefined) {
             break;
         case "topUpGamingPool":
             topUpGamingPool();
+            break;
+        case 'tokenBalance':
+            queryE4cBalance();
+            break;
+        case 'queryE4c':
+            queryE4c();
             break;
         case "transferE4CToPlayer":
             transferE4CToPlayer();
