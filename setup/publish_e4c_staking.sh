@@ -19,6 +19,9 @@ if [ $# -ne 0 ]; then
   if [ $1 = "devnet" ]; then
     NETWORK="https://fullnode.devnet.sui.io:443"
   fi
+    if [ $1 = "mainnet" ]; then
+      NETWORK="https://fullnode.mainnet.sui.io:443"
+    fi
 fi
 
 publish_res=$(sui client publish   --skip-dependency-verification  --gas-budget 200000000 --json ../e4c_staking)

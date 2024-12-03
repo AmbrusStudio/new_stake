@@ -10,7 +10,9 @@ console.log(stakingEnvConfig);
 export const SUI_NETWORK = stakingEnvConfig.parsed?.SUI_NETWORK!;
 export const GAME_LIQIUIDITY_POOL = stakingEnvConfig.parsed?.GAME_LIQUIDITY_POOL!;
 export const STAKING_PACKAGE = stakingEnvConfig.parsed?.STAKING_PACKAGE!;
-export const ADMIN_PHRASE = envConfig.parsed?.ADMIN_MNEMOMIC_PHRASE!;
+export const ADMIN_PHRASE = stakingEnvConfig.parsed?.ADMIN_MNEMOMIC_PHRASE!;
+
+export const ADMIN_CAP = stakingEnvConfig.parsed?.ADMIN_CAP!;
 export const E4C_PACKAGE = envConfig.parsed?.E4C_PACKAGE!;
 export const PLAYER_PHRASE = stakingEnvConfig.parsed?.PLAYER_MNEMOMIC_PHRASE!;
 export const STAKING_CONFIG = stakingEnvConfig.parsed?.STAKING_CONFIG!;

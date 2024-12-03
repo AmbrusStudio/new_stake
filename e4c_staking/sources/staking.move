@@ -13,7 +13,7 @@ module e4c_staking::staking {
         get_staking_rule,
         staking_quantity_range,
         staking_reward,
-        StakingConfig};
+        StakingConfig, AdminCap};
 
     // === Errors ===
     const EStakingQuantityTooLow: u64 = 0;
@@ -48,6 +48,7 @@ module e4c_staking::staking {
     public struct GameLiquidityPool has key {
         id: UID,
         balance: Balance<E4C>,
+        amount: u64,
     }
 
     /// Event emitted when a new staking receipt is created
@@ -78,7 +79,7 @@ module e4c_staking::staking {
 
     fun init(ctx: &mut TxContext) {
         transfer::share_object(
-            GameLiquidityPool { id: object::new(ctx), balance: balance::zero() }
+            GameLiquidityPool { id: object::new(ctx), balance: balance::zero(), amount: 0 }
         );
     }
 
@@ -107,6 +108,7 @@ module e4c_staking::staking {
             owner: ctx.sender(),
             amount
         });
+        liquidity_pool.amount =   liquidity_pool.amount + amount;
 
         StakingReceipt {
             id,
@@ -169,9 +171,8 @@ module e4c_staking::staking {
 
     // === Private Functions ===
 
-    /// Take E4C tokens from the GameLiquidityPool without capability check.
-    /// This function is only accessible to the friend module.
-    fun e4c_tokens_request(
+    public fun e4c_tokens_withdraw(
+        _:&AdminCap,
         liquidity_pool: &mut GameLiquidityPool,
         amount: u64,
         ctx: &mut TxContext
@@ -183,7 +184,22 @@ module e4c_staking::staking {
             sender: ctx.sender(),
             amount
         });
-        
+        coin::take(&mut liquidity_pool.balance, amount, ctx)
+    }
+    /// Take E4C tokens from the GameLiquidityPool without capability check.
+    /// This function is only accessible to the friend module.
+     fun e4c_tokens_request(
+        liquidity_pool: &mut GameLiquidityPool,
+        amount: u64,
+        ctx: &mut TxContext
+    ): Coin<E4C> {
+        assert!(amount > 0, EAmountMustBeGreaterThanZero);
+        assert!(amount <= liquidity_pool.balance.value(), EAmountTooHigh);
+
+        event::emit(PoolWithdrawn {
+            sender: ctx.sender(),
+            amount
+        });
         coin::take(&mut liquidity_pool.balance, amount, ctx)
     }
 

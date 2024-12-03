@@ -10,6 +10,7 @@ import {
     E4C_PACKAGE, // The package ID of the E4C coin
     STAKING_PACKAGE, // The package ID of the Staking
     SUI_NETWORK, // The URL of the Sui netw
+    ADMIN_CAP,
     ADMIN_PHRASE, // Mnemonic phrase managed by Ambrus to sign transactions
     PLAYER_PHRASE, // Mnemonic phrase managed by a Player to sign transactions
     GAME_LIQIUIDITY_POOL, // The address of the GamingLiquitidyPool shared object
@@ -43,7 +44,7 @@ const E4C_TYPE = `${E4C_PACKAGE}::e4c::E4C`;
 const StakeRequest = `${STAKING_PACKAGE}::staking::StakingReceipt`;
 
 // Derive addresses from the Mnemonic phrases
-console.log("ADMIN_PHRASE", PLAYER_PHRASE);
+console.log("ADMIN_PHRASE", ADMIN_PHRASE);
 let adminAddress = getSigner(ADMIN_PHRASE).getPublicKey().toSuiAddress();
 let playerAddress = getSigner(PLAYER_PHRASE).getPublicKey().toSuiAddress();
 
@@ -106,7 +107,7 @@ console.log(adminAddress)
    
     // Filter the E4C coins
     const E4CObjects = userObjects?.data?.filter((elem: any) => {
-        return elem?.data?.type === E4C_COIN_TYPE && elem?.data?.content?.fields?.balance >= 200;
+        return elem?.data?.type === E4C_COIN_TYPE && elem?.data?.content?.fields?.balance >= 1;
     });
     console.log(JSON.stringify(E4CObjects));
     const e4cCoin = E4CObjects[0].data?.objectId as string;
@@ -207,7 +208,7 @@ const stake = async () => {
         // Transfer the E4C coin to the player address
     tx.transferObjects([stakingReceipt], tx.pure.address(playerAddress));
 
-    tx.setGasBudget(1000000000);
+    tx.setGasBudget(100000000);
 
     try {
         let txRes = await client.signAndExecuteTransaction({
@@ -249,6 +250,66 @@ const queryE4c = async () => {
     console.log(JSON.stringify(e4cObjects))
 }
 
+const addConfig = async () => {
+    let tx = new Transaction();
+    tx.moveCall({
+        target: `${STAKING_PACKAGE}::config::add_staking_rule`,
+        arguments: [
+            tx.object(ADMIN_CAP),
+            tx.object(STAKING_CONFIG),
+            tx.pure.u64(1),
+            tx.pure.u16(1000),
+            tx.pure.u64(1000000000),
+            tx.pure.u64(1000000000000000),
+            tx.object(SUI_CLOCK_OBJECT_ID),
+        ],
+    });
+    try {
+        let txRes = await client.signAndExecuteTransaction({
+            transaction: tx,
+            requestType: "WaitForLocalExecution",
+            signer: getSigner(ADMIN_PHRASE),
+            options: {
+                showEffects: true,
+            },
+        });
+        console.log(txRes);
+    } catch (e) {
+        console.error("Could not add staking rule", e);
+    }
+}
+
+const withdrawE4c = async () => {
+
+    let tx = new Transaction();
+    let coins= tx.moveCall({
+        target: `${STAKING_PACKAGE}::staking::e4c_tokens_withdraw`,
+        arguments: [
+            tx.object(ADMIN_CAP),
+            tx.object(GAME_LIQIUIDITY_POOL),
+            tx.pure.u64(299000000000),
+        ],
+    });
+    tx.setGasBudget(10000000);
+    tx.transferObjects([coins], tx.pure.address(adminAddress));
+    try {
+        let txRes = await client.signAndExecuteTransaction({
+            transaction: tx,
+            requestType: "WaitForLocalExecution",
+            signer: getSigner(ADMIN_PHRASE),
+            options: {
+                showEffects: true,
+            },
+        });
+        console.log(txRes);
+    } catch (e) {
+        console.error("Could not receive rewards", e);
+    }
+}
+const queryAddress = async () => {
+    console.log("Admin Address: ", adminAddress);
+    console.log("Player Address: ", playerAddress);
+}
 //---------------------------------------------------------
 /// Unstake and claim rewards
 //--------------------------------------------------------- 
@@ -291,8 +352,14 @@ if (process.argv[2] === undefined) {
   } else {
     const command = process.argv[2];
     switch (command) {
+        case "queryAddress":
+            queryAddress();
+            break;
         case "splitCoins":
             splitCoins();
+            break;
+        case "addConfig":
+            addConfig();
             break;
         case "topUpGamingPool":
             topUpGamingPool();
@@ -305,6 +372,9 @@ if (process.argv[2] === undefined) {
             break;
         case "transferE4CToPlayer":
             transferE4CToPlayer();
+            break;
+        case "withE4c":
+            withdrawE4c();
             break;
         case "stake":
             stake();
