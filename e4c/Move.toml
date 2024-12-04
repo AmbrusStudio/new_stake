@@ -2,6 +2,7 @@
 name = "e4c"
 #edition = "2024.beta" # edition = "legacy" to use legacy (pre-2024) Move
 edition = "2024.beta"
+published-at = "0x7f1afb87d9072d2f59a2ca0328094b8c1377b218a427db19acba4ce3b0fc7b45"
 published-at = "0x84b27ddadc6139c7e8837fef6759eba4670ba3fc0679acd118b4e9252f834e29"     # The address to publish the package at
 # license = ""           # e.g., "MIT", "GPL", "Apache 2.0"
 # authors = ["..."]      # e.g., ["Joe Smith (joesmith@noemail.com)", "John Snow (johnsnow@noemail.com)"]
@@ -20,8 +21,9 @@ Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-fram
 # override use `override = true`
 # Override = { local = "../conflicting/version", override = true }
 
+#pord  e4c = "0x84b27ddadc6139c7e8837fef6759eba4670ba3fc0679acd118b4e9252f834e29"
 [addresses]
-e4c = "0x84b27ddadc6139c7e8837fef6759eba4670ba3fc0679acd118b4e9252f834e29"
+e4c = "0x7f1afb87d9072d2f59a2ca0328094b8c1377b218a427db19acba4ce3b0fc7b45"
 
 # Named addresses will be accessible in Move as `@name`. They're also exported:
 # for example, `std = "0x1"` is exported by the Standard Library.

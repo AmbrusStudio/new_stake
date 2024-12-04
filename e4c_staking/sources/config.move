@@ -4,21 +4,19 @@
 module e4c_staking::config {
     use sui::clock::Clock;
     use sui::vec_map::VecMap;
-    use sui::math;
-    use sui::event;
-    use sui::package;
-    use sui::vec_map;
+
     // === Errors ===
     const EIncorrectBasisPoints: u64 = 0;
     const EStakingTimeMustBeGreaterThanZero: u64 = 1;
     const EStakingTimeConflict: u64 = 2;
     const EStakingQuantityRangeUnmatch: u64 = 3;
     const EStakingTimeNotFound: u64 = 4;
+    const EStakingQuantityRangeConflict: u64 = 5;
 
     // === Constants ===
     const MAX_U64: u64 = 18446744073709551615;
     const MAX_BPS: u16 = 10_000;
-    const E4C_DECIMALS: u64 = 1000_000_000;
+    const E4C_DECIMALS: u64 = 1_000_000_000;
 
     // === Structs ===
 
@@ -65,7 +63,7 @@ module e4c_staking::config {
     // ============================================================
     // | T (Staking Days) | APR (Annualized Percentage Rate) | Staking Quantity Range        | ROI (Return on Investment) |
     // --------------------------------------------------------------------------------------------------------------------
-    // |  30              | 8%                               | 1 - 100 (including 100)       | 0.67%                      |              
+    // |  30              | 8%                               | 1 - 100 (including 100)       | 0.67%                      |
     // |  60              | 10%                              | 100 - 1000 (including 1000)   | 1.67%
     // |  90              | 15%                              | 1000 - ∞  (more than 1000)    | 3.75%
 
@@ -76,11 +74,25 @@ module e4c_staking::config {
             staking_rules: vec_map::empty<u64, StakingRule>(),
         };
 
-        config.staking_rules.insert(10, StakingRule {
-            staking_days: 10, // 30 days
-            annualized_interest_rate_bp: 1000, // 8%
-            staking_quantity_range_min: 1 * E4C_DECIMALS,
-            staking_quantity_range_max: 1000000000 * E4C_DECIMALS,
+        config.staking_rules.insert(30, StakingRule {
+            staking_days: 30, // 30 days
+            annualized_interest_rate_bp: 800, // 8%
+            staking_quantity_range_min: (E4C_DECIMALS - 1),
+            staking_quantity_range_max: 100 * E4C_DECIMALS,
+        });
+
+        config.staking_rules.insert(60, StakingRule {
+            staking_days: 60, // 60 days
+            annualized_interest_rate_bp: 1000, // 10%
+            staking_quantity_range_min: 100 * E4C_DECIMALS,
+            staking_quantity_range_max: 1000 * E4C_DECIMALS,
+        });
+
+        config.staking_rules.insert(90, StakingRule {
+            staking_days: 90, // 90 days
+            annualized_interest_rate_bp: 1500, // 15%
+            staking_quantity_range_min: 1000 * E4C_DECIMALS,
+            staking_quantity_range_max: MAX_U64,
         });
 
         transfer::public_share_object(config);
@@ -110,6 +122,7 @@ module e4c_staking::config {
         assert!(annualized_interest_rate_bp <= MAX_BPS, EIncorrectBasisPoints);
         assert!(!config.staking_rules.contains(&staking_days), EStakingTimeConflict);
         assert!(staking_quantity_range_min < staking_quantity_range_max, EStakingQuantityRangeUnmatch);
+        assert!(!is_amount_overlapping(config, staking_quantity_range_min, staking_quantity_range_max), EStakingQuantityRangeConflict);
 
         config.staking_rules.insert(staking_days, StakingRule {
             staking_days,
@@ -118,7 +131,7 @@ module e4c_staking::config {
             staking_quantity_range_max,
         });
 
-         event::emit(AddedRule {
+        event::emit(AddedRule {
             added_staking_days: staking_days,
             added_time: clock.timestamp_ms(),
             added_interest_rate: annualized_interest_rate_bp,
@@ -126,7 +139,7 @@ module e4c_staking::config {
             added_quantity_range_max: staking_quantity_range_max,
         });
     }
-    
+
     /// Remove a staking rule from the staking configuration
     public fun remove_staking_rule(
         _: &AdminCap,
@@ -135,7 +148,7 @@ module e4c_staking::config {
         clock: &Clock
     ): StakingRule {
         let (_, config) = config.staking_rules.remove(&staking_days);
-        
+
         event::emit(RemovedRule {
             removed_staking_days: staking_days,
             removed_time:  clock.timestamp_ms(),
@@ -158,11 +171,11 @@ module e4c_staking::config {
         // N = annualized interest rate in basis points
         // T = staking time in days
         let apr_multiply_with_staking_days = rule.annualized_interest_rate_bp as u64 * staking_days;
-        let divided_by_360 = math::divide_and_round_up(apr_multiply_with_staking_days, 360);
-        let reward = mul_div_round(divided_by_360, staking_quantity, 10_000);
+        let expected_roi = math::divide_and_round_up(apr_multiply_with_staking_days, 360);
+        let reward = mul_div_round(expected_roi, staking_quantity, 10_000);
         reward
     }
-    //Reference :https://github.com/CetusProtocol/integer-mate/blob/main/sui/sources/full_math_u64.move#L7-L10
+
     public fun mul_div_round(num1: u64, num2: u64, denom: u64): u64 {
         let half_divisor = (denom as u128 ) >> 1;
         let dividend = (num1 as u128) * (num2 as u128);
@@ -187,6 +200,36 @@ module e4c_staking::config {
         rule: &StakingRule,
     ): u16 {
         rule.annualized_interest_rate_bp
+    }
+
+    // Check if the new staking "quantity range" is overlapping with any existing range
+    fun is_amount_overlapping(config: &StakingConfig, new_min: u64, new_max: u64): bool {
+        let keys = config.staking_rules.keys();
+        let len = keys.length();
+
+        let mut i: u64 = 0;
+        while (i < len) {
+            let existing_rule = config.staking_rules.get(keys.borrow(i));
+            if (new_min < existing_rule.staking_quantity_range_max &&
+                new_max > existing_rule.staking_quantity_range_min) {
+                return true
+            };
+
+            if (new_max < existing_rule.staking_quantity_range_min) {
+                return false
+            };
+            i = i + 1;
+        };
+        false
+    }
+
+    #[test_only]
+    public fun is_amount_overlapping_for_testing(
+        config: &StakingConfig,
+        new_min: u64,
+        new_max: u64
+    ): bool {
+        is_amount_overlapping(config, new_min, new_max)
     }
 
     #[test_only]
