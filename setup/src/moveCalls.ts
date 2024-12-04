@@ -225,8 +225,9 @@ const stake = async () => {
     }
 };
 const queryE4cBalance = async () => {
+    console.log("Admin Address: ", adminAddress);
     const balance = await client.getBalance({
-        owner: playerAddress,
+        owner: adminAddress,
         coinType: E4C_TYPE,
     });
     console.log(balance);
@@ -287,7 +288,7 @@ const withdrawE4c = async () => {
         arguments: [
             tx.object(ADMIN_CAP),
             tx.object(GAME_LIQIUIDITY_POOL),
-            tx.pure.u64(299000000000),
+            tx.pure.u64(2972000000),
         ],
     });
     tx.setGasBudget(10000000);
