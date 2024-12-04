@@ -164,8 +164,17 @@ module e4c_staking::config {
     }
     //Reference :https://github.com/CetusProtocol/integer-mate/blob/main/sui/sources/full_math_u64.move#L7-L10
     public fun mul_div_round(num1: u64, num2: u64, denom: u64): u64 {
-        let r = (((num1 as u128) * (num2 as u128)) + ((denom as u128) >> 1)) / (denom as u128);
-        (r as u64)
+        let half_divisor = (denom as u128 ) >> 1;
+        let dividend = (num1 as u128) * (num2 as u128);
+        let remainder = dividend % (denom as u128);
+        let quotient = dividend / (denom as u128);
+
+        if (remainder >= half_divisor) {
+            let result: u128 = (quotient + 1);
+            (result as u64)
+        } else {
+            (quotient as u64)
+        }
     }
 
     public fun staking_quantity_range(

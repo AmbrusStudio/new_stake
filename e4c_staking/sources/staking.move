@@ -48,7 +48,7 @@ module e4c_staking::staking {
     public struct GameLiquidityPool has key {
         id: UID,
         balance: Balance<E4C>,
-        amount: u64,
+        e4c_staked: u64,
     }
 
     /// Event emitted when a new staking receipt is created
@@ -79,7 +79,7 @@ module e4c_staking::staking {
 
     fun init(ctx: &mut TxContext) {
         transfer::share_object(
-            GameLiquidityPool { id: object::new(ctx), balance: balance::zero(), amount: 0 }
+            GameLiquidityPool { id: object::new(ctx), balance: balance::zero(), e4c_staked: 0 }
         );
     }
 
@@ -108,7 +108,7 @@ module e4c_staking::staking {
             owner: ctx.sender(),
             amount
         });
-        liquidity_pool.amount =   liquidity_pool.amount + amount;
+        liquidity_pool.e4c_staked =   liquidity_pool.e4c_staked + amount;
 
         StakingReceipt {
             id,
