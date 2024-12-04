@@ -172,19 +172,12 @@ module e4c_staking::staking {
     // === Private Functions ===
 
     public fun e4c_tokens_withdraw(
-        _:&AdminCap,
+        _: &AdminCap,
         liquidity_pool: &mut GameLiquidityPool,
         amount: u64,
-        ctx: &mut TxContext
+        ctx: &mut TxContext,
     ): Coin<E4C> {
-        assert!(amount > 0, EAmountMustBeGreaterThanZero);
-        assert!(amount <= liquidity_pool.balance.value(), EAmountTooHigh);
-
-        event::emit(PoolWithdrawn {
-            sender: ctx.sender(),
-            amount
-        });
-        coin::take(&mut liquidity_pool.balance, amount, ctx)
+        liquidity_pool.e4c_tokens_request(amount, ctx)
     }
     /// Take E4C tokens from the GameLiquidityPool without capability check.
     /// This function is only accessible to the friend module.
