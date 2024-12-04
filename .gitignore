@@ -37,6 +37,7 @@ e4c_staking/Move.lock
 .env.staking
 .env.bak
 .env.staking.prev
+.env.staking.now
 node_modules
 .publish.res.json
 .trace
